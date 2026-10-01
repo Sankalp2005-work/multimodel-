@@ -1,0 +1,48 @@
+{
+  "perturbations": {
+    "rushed_pace": {
+      "description": "Pitch-preserving time-compress the target sentence",
+      "parameter": "speed_factor",
+      "severities": {
+        "1": 1.20,
+        "2": 1.40,
+        "3": 1.60,
+        "4": 1.80
+      }
+    },
+    "dead_pause": {
+      "description": "Insert digital-silence-plus-room-tone at a word boundary mid-sentence",
+      "parameter": "pause_duration_s",
+      "severities": {
+        "1": 0.5,
+        "2": 1.0,
+        "3": 1.7,
+        "4": 2.5
+      }
+    },
+    "flat_pitch": {
+      "description": "Compress F0 contour toward sentence mean (retained log-F0 variance fraction)",
+      "parameter": "retained_variance_fraction",
+      "severities": {
+        "1": 0.75,
+        "2": 0.50,
+        "3": 0.25,
+        "4": 0.05
+      }
+    },
+    "mumbled_clarity": {
+      "description": "Gain reduction + high-frequency smear (low-pass cutoff)",
+      "parameter": ["gain_reduction_db", "lowpass_cutoff_hz"],
+      "severities": {
+        "1": [-3, 6000],
+        "2": [-6, 4500],
+        "3": [-9, 3500],
+        "4": [-12, 2500]
+      }
+    }
+  },
+  "crossfade_ms": 30,
+  "default_seed": 7,
+  "generate_severities": [1, 2, 3, 4],
+  "source_takes": ["ideal_1"]
+}

@@ -1,0 +1,24 @@
+{
+  "gate": "G3",
+  "phase": 3,
+  "status": "pass",
+  "timestamp": "2026-10-01T14:51:00+05:30",
+  "criteria": {
+    "perturbation_types": 4,
+    "severity_levels": 4,
+    "clips_generated": 96,
+    "transcripts_covered": 6,
+    "seed": 7,
+    "deterministic": true,
+    "target_sentence_matching": {
+      "T1": "66%",
+      "T2": "93%",
+      "T3": "77%",
+      "T4": "58%",
+      "T5": "96%",
+      "T6": "56%"
+    },
+    "total_manifest_rows": 124
+  },
+  "notes": "All 96 synthetic perturbation clips generated from 6 ideal takes using deterministic seed=7. Whisper successfully located target sentences in all transcripts (match 56-96%). All 4 flaw types (rushed_pace, dead_pause, flat_pitch, mumbled_clarity) at all 4 severities generated per transcript. Crossfade stitching applied at 30ms boundaries. Manifest updated to 124 total rows (28 real + 96 synthetic)."
+}
