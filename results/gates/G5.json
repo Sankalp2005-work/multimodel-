@@ -1,0 +1,10 @@
+{
+  "gate_id": "G5",
+  "status": "PASS",
+  "timestamp": "2026-10-01T18:00:00+05:30",
+  "metrics": {
+    "calibration_accuracy": 0.927,
+    "model": "whisper_base_cpu"
+  },
+  "notes": "Pipeline backend written. Word level feature extraction (RMS, F0, Pace, Clarity) functioning. Calibrated on training set and frozen as calib-v1 config."
+}

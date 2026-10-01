@@ -1,0 +1,12 @@
+{
+    "rushed_thresh": -0.05,
+    "pause_thresh": 0.4,
+    "pitch_thresh": -1.0,
+    "clarity_thresh": -0.15,
+    "weights": {
+        "rushed_pace": 1.0,
+        "dead_pause": 1.0,
+        "flat_pitch": 1.0,
+        "mumbled_clarity": 1.0
+    }
+}
