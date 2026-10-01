@@ -1,0 +1,11 @@
+{
+  "gate": "G0",
+  "phase": 0,
+  "status": "pending_user_input",
+  "criteria": {
+    "repo_ownership_licence_confirmed": true,
+    "hackathon_rule_quoted": false,
+    "prior_work_statement_drafted": true
+  },
+  "notes": "Repo initialized, LICENSE added, pre-hackathon baseline tagged. Pending exact quote of the hackathon rule on prior work to pass the gate."
+}
