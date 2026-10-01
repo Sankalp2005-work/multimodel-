@@ -1,0 +1,57 @@
+# SpeechMirror Reading Sheet
+
+*Instructions for the speaker: Read the entire transcript normally for the "ideal" takes. For flawed takes, apply the specified flaw **only** to the highlighted target sentence.*
+
+---
+
+## T1: Business Update
+Good morning everyone, and thank you for joining the Q3 financial review for the North American division of Vertex Solutions. Our quarterly revenue exceeded expectations by roughly fourteen point five percent, reaching a record high of two hundred and eighty million dollars. Much of this growth was driven by the successful launch of the new enterprise software suite in late August, which captured a significant market share from our primary competitors. 
+
+**[TARGET SENTENCE]:** However, we did face some unexpected supply chain disruptions in September that slightly delayed the rollout of our hardware components across five key distribution centers in Canada and Mexico. 
+
+Moving into the fourth quarter, our primary focus will be on expanding our footprint in the European market while maintaining our current operational efficiency. Please review the detailed spreadsheet I sent out this morning, and we will reconvene on Thursday at two thirty PM to discuss our strategic priorities for the upcoming fiscal year.
+
+---
+
+## T2: Scientific/Medical
+The recent clinical trial conducted at Johns Hopkins University has revealed promising developments in the treatment of chronic autoimmune disorders. Researchers administered a novel synthetic peptide, designated as AX-742, to a cohort of one hundred and fifty adult patients over a six-month observation period. Preliminary data suggests a statistically significant reduction in inflammatory biomarkers, specifically interleukin-six and tumor necrosis factor alpha, in nearly eighty percent of the participants. 
+
+**[TARGET SENTENCE]:** Despite these encouraging efficacy results, a small subset of patients experienced mild gastrointestinal distress and transient headaches during the initial two weeks of the dosage escalation phase. 
+
+Furthermore, the longitudinal analysis indicates that the therapeutic benefits are sustained even after the medication frequency is reduced to a bi-weekly subcutaneous injection. The research team is now preparing to submit their comprehensive findings to the New England Journal of Medicine and hopes to initiate Phase III trials by early next spring.
+
+---
+
+## T3: Technical/Software
+Welcome to the introductory tutorial on deploying scalable microservices using the latest version of the Kubernetes orchestration platform. In this module, we will explore how to configure your YAML manifest files to define replica sets, persistent volume claims, and internal cluster networking. It is absolutely crucial to understand the differences between a NodePort service and a LoadBalancer service when exposing your application to external traffic on AWS or Google Cloud. 
+
+**[TARGET SENTENCE]:** If you encounter any unexpected CrashLoopBackOff errors, you should immediately check the pod logs and verify that your Docker container has the correct environment variables injected. 
+
+Remember that implementing proper readiness and liveness probes will significantly improve the overall resilience and availability of your distributed application under heavy load. Once you have successfully deployed the backend API, proceed to chapter four where we integrate the Redis caching layer and configure the automated CI/CD pipeline using GitHub Actions.
+
+---
+
+## T4: News Report
+Local authorities in downtown Seattle are advising residents to prepare for severe weather conditions expected to arrive late tomorrow evening. Meteorologists at the National Weather Service have issued a flash flood warning for King County and the surrounding metropolitan areas following an unprecedented three inches of rainfall this morning. City officials have proactively closed the primary suspension bridge on Highway 99, causing significant traffic delays stretching all the way back to the international airport. 
+
+**[TARGET SENTENCE]:** Emergency response teams, including the Coast Guard and local fire departments, remain on high alert and have pre-positioned rescue boats near the most vulnerable low-lying neighborhoods. 
+
+Meanwhile, utility companies are working around the clock to restore power to approximately forty-five thousand homes that were disconnected when strong wind gusts brought down several major transmission lines. The mayor is scheduled to hold a live press conference at City Hall at precisely six fifteen tonight to provide further updates and safety instructions for all citizens.
+
+---
+
+## T5: Story/Narrative
+The old wooden floorboards creaked loudly as Detective Miller slowly navigated the narrow hallway of the abandoned Victorian mansion on Elm Street. He carefully aimed his flickering flashlight toward the ceiling, revealing intricate spiderwebs that danced slightly in the cold, damp draft coming from a broken window. According to the police records from nineteen eighty-seven, this exact location was the site of a notorious art heist where three priceless Renaissance paintings vanished without a single trace. 
+
+**[TARGET SENTENCE]:** As he stepped into the main library, his boot brushed against a loose floorboard, echoing through the silent house and making his heart skip a sudden beat. 
+
+Hidden beneath the dusty rug, he discovered a small, ornate brass key that looked like it belonged to an antique grandfather clock or a heavy iron safe. He slipped the strange artifact into his trench coat pocket, knowing instinctively that this forgotten piece of evidence would finally unravel the town's oldest unsolved mystery.
+
+---
+
+## T6: Customer Service
+Thank you for calling the Global Horizons customer support center; my name is Sarah, and I will be assisting you with your account upgrade today. Before we proceed with changing your subscription plan, I need to verify your identity by asking for your four-digit security PIN and the billing zip code on file. We are currently offering a promotional discount where you can receive three months of premium access completely free if you choose to switch to our annual billing cycle. 
+
+**[TARGET SENTENCE]:** Please note that any changes made to your account during this phone call will take approximately twenty-four to forty-eight hours to fully reflect on your online dashboard. 
+
+If you happen to experience any login issues after the transition, we highly recommend clearing your browser cache and cookies before attempting to reset your password. I have just sent a confirmation email to the address on your profile, so please check your spam folder if you do not see it in your inbox within the next ten minutes.
