@@ -1,0 +1,17 @@
+{
+  "gate": "G2",
+  "phase": 2,
+  "status": "pass",
+  "timestamp": "2026-10-01T14:43:00+05:30",
+  "criteria": {
+    "speakers": 1,
+    "transcripts": 6,
+    "total_clips": 28,
+    "format": "16kHz mono 16-bit PCM WAV",
+    "clipping_check": "all pass (peak < -1 dBFS)",
+    "snr_check": "all pass (SNR >= 25 dB on ideal takes)",
+    "manifest_valid": true,
+    "splits": {"train": 14, "val": 4, "test": 10}
+  },
+  "notes": "All 28 raw .m4a files converted to WAV and passed QC. Manifest built with SHA-256 hashes, durations, and QC status. Splits assigned by transcript group (T1-T3 train, T4 val, T5-T6 test). Note: Only 1 speaker currently; need at least 1 more for G4. Some flaw types missing per transcript (not all 4 flaws recorded for every transcript)."
+}
