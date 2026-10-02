@@ -1,0 +1,13 @@
+{
+  "gate_id": "G6",
+  "status": "PASS",
+  "timestamp": "2026-10-01T18:10:00+05:30",
+  "metrics": {
+    "test_accuracy": 0.842,
+    "wilson_ci_95": [0.696, 0.926],
+    "mean_iou": 0.48,
+    "severity_mae": 1.13,
+    "median_timestamp_error_ms": 2350.0
+  },
+  "notes": "Benchmark and stress tests complete. Zero-shot contrastive pipeline achieved 84% accuracy. Metrics frozen into test_report.json."
+}

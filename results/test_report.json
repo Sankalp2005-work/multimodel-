@@ -1,0 +1,82 @@
+{
+    "dataset_size": 38,
+    "accuracy": 0.8421052631578947,
+    "wilson_ci_95": [
+        0.6958318822077686,
+        0.9255613658484106
+    ],
+    "severity_mae": 1.131578947368421,
+    "mean_iou": 0.48293935319971715,
+    "median_timestamp_error_ms": 2349.9999999999977,
+    "classification_report": {
+        "dead_pause": {
+            "precision": 0.9090909090909091,
+            "recall": 1.0,
+            "f1-score": 0.9523809523809523,
+            "support": 10.0
+        },
+        "flat_pitch": {
+            "precision": 1.0,
+            "recall": 0.4444444444444444,
+            "f1-score": 0.6153846153846154,
+            "support": 9.0
+        },
+        "mumbled_clarity": {
+            "precision": 1.0,
+            "recall": 0.8888888888888888,
+            "f1-score": 0.9411764705882353,
+            "support": 9.0
+        },
+        "rushed_pace": {
+            "precision": 0.6666666666666666,
+            "recall": 1.0,
+            "f1-score": 0.8,
+            "support": 10.0
+        },
+        "accuracy": 0.8421052631578947,
+        "macro avg": {
+            "precision": 0.8939393939393939,
+            "recall": 0.8333333333333333,
+            "f1-score": 0.8272355095884507,
+            "support": 38.0
+        },
+        "weighted avg": {
+            "precision": 0.8883572567783095,
+            "recall": 0.8421052631578947,
+            "f1-score": 0.8298120867780311,
+            "support": 38.0
+        }
+    },
+    "confusion_matrix": [
+        [
+            10,
+            0,
+            0,
+            0
+        ],
+        [
+            0,
+            8,
+            0,
+            1
+        ],
+        [
+            5,
+            0,
+            4,
+            0
+        ],
+        [
+            0,
+            0,
+            0,
+            10
+        ]
+    ],
+    "cm_labels": [
+        "rushed_pace",
+        "mumbled_clarity",
+        "flat_pitch",
+        "dead_pause"
+    ]
+}

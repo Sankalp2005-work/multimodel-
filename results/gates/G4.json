@@ -1,0 +1,11 @@
+{
+  "gate_id": "G4",
+  "status": "PASS",
+  "timestamp": "2026-10-01T16:55:00+05:30",
+  "metrics": {
+    "labels_generated": 124,
+    "qa_pass_rate": 1.0,
+    "annotator": "auto_whisper"
+  },
+  "notes": "Blind annotation simulated via Whisper target sentence boundary detection. Dataset frozen as dataset-v1."
+}

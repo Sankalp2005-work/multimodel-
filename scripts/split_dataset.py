@@ -1,38 +1,61 @@
-#!/usr/bin/env python3
 """
-Train/val/test split.
+split_dataset.py — Assign train/val/test splits to manifest.csv.
+
+Splits by transcript group (not by clip) to prevent leakage.
+T1, T2, T3 -> train
+T4         -> val
+T5, T6     -> test
+
+Usage:
+    python scripts/split_dataset.py --manifest data/manifests/manifest.csv
 """
+
 import argparse
-import json
-import random
-import sys
+import csv
 from pathlib import Path
-from datetime import datetime
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-def set_seed(seed: int):
-    random.seed(seed)
+SPLIT_MAP = {
+    "T1": "train",
+    "T2": "train",
+    "T3": "train",
+    "T4": "val",
+    "T5": "test",
+    "T6": "test",
+}
 
-def write_run_manifest(name: str, args: dict, results: dict):
-    runs_dir = Path("results/runs")
-    runs_dir.mkdir(parents=True, exist_ok=True)
-    manifest_path = runs_dir / f"run_{name}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
-    with open(manifest_path, "w", encoding="utf-8") as f:
-        json.dump({"script": name, "args": args, "results": results}, f, indent=2)
 
 def main():
-    parser = argparse.ArgumentParser(description="Split dataset into train/val/test.")
-    parser.add_argument("--manifest", type=str, required=True, help="Path to manifest.csv")
-    parser.add_argument("--train-ratio", type=float, default=0.6, help="Train ratio")
-    parser.add_argument("--val-ratio", type=float, default=0.2, help="Validation ratio")
-    parser.add_argument("--seed", type=int, default=42, help="Random seed")
+    parser = argparse.ArgumentParser(description="Assign splits to manifest.csv")
+    parser.add_argument("--manifest", default="data/manifests/manifest.csv")
+    parser.add_argument("--seed", type=int, default=42)
     args = parser.parse_args()
-    set_seed(args.seed)
 
-    results = {"train_count": 0, "val_count": 0, "test_count": 0}
-        
-    write_run_manifest("split_dataset", vars(args), results)
+    manifest_path = Path(args.manifest)
+
+    # Read
+    with open(manifest_path, "r", encoding="utf-8") as f:
+        reader = csv.DictReader(f)
+        fieldnames = reader.fieldnames
+        rows = list(reader)
+
+    # Assign splits
+    counts = {"train": 0, "val": 0, "test": 0}
+    for row in rows:
+        text_id = row["text_id"].upper()
+        split = SPLIT_MAP.get(text_id, "train")
+        row["split"] = split
+        counts[split] += 1
+
+    # Write back
+    with open(manifest_path, "w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=fieldnames)
+        writer.writeheader()
+        writer.writerows(rows)
+
+    print(f"Splits assigned: {counts}")
+    print(f"Updated {manifest_path}")
+
 
 if __name__ == "__main__":
     main()

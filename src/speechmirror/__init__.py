@@ -1,1 +1,2 @@
-__version__ = '0.1.0'
+# src/speechmirror/__init__.py
+"""SpeechMirror - Contrastive Speech Analytics."""
