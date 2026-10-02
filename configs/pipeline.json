@@ -1,0 +1,58 @@
+{
+  "version": "0.1.0",
+  "alignment": {
+    "method": "whisperx",
+    "model_size": "base",
+    "language": "en",
+    "max_wer": 0.08
+  },
+  "features": {
+    "sample_rate": 16000,
+    "frame_length_ms": 25,
+    "hop_length_ms": 10,
+    "n_mfcc": 13,
+    "f0_method": "pyworld",
+    "speech_rate_window_words": 5
+  },
+  "normalization": {
+    "method": "zscore_per_recording",
+    "f0_unit": "semitones_re_median",
+    "energy_ref": "median_ideal_speech"
+  },
+  "detection": {
+    "rushed_pace": {
+      "speech_rate_ratio_threshold": 1.25,
+      "min_region_words": 3,
+      "severity_boundaries": [1.15, 1.3, 1.5, 1.7]
+    },
+    "dead_pause": {
+      "excess_pause_threshold_s": 0.4,
+      "min_pause_duration_s": 0.3,
+      "severity_boundaries": [0.4, 0.8, 1.4, 2.0]
+    },
+    "flat_pitch": {
+      "f0_variance_ratio_threshold": 0.6,
+      "f0_range_ratio_threshold": 0.5,
+      "min_voiced_frames": 10,
+      "severity_boundaries": [0.65, 0.45, 0.25, 0.10]
+    },
+    "mumbled_clarity": {
+      "energy_drop_db": -2.5,
+      "spectral_centroid_ratio_threshold": 0.8,
+      "mfcc_distance_threshold": 1.5,
+      "severity_boundaries": [1.2, 1.8, 2.5, 3.5]
+    }
+  },
+  "scoring": {
+    "weights": {
+      "pace": 0.25,
+      "pause": 0.20,
+      "pitch": 0.20,
+      "energy": 0.15,
+      "clarity": 0.20
+    },
+    "scale": [0, 1, 2, 3, 4]
+  },
+  "seed": 42,
+  "deterministic": true
+}

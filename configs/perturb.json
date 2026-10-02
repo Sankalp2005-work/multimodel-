@@ -1,0 +1,54 @@
+{
+  "version": "0.1.0",
+  "perturbations": {
+    "rushed_pace": {
+      "description": "Pitch-preserving time-compress the target sentence",
+      "method": "pyrubberband_time_stretch",
+      "speed_factors": {
+        "1": 1.20,
+        "2": 1.40,
+        "3": 1.60,
+        "4": 1.80
+      }
+    },
+    "dead_pause": {
+      "description": "Insert digital-silence-plus-room-tone at a word boundary mid-sentence",
+      "method": "silence_insertion",
+      "pause_durations_s": {
+        "1": 0.5,
+        "2": 1.0,
+        "3": 1.7,
+        "4": 2.5
+      },
+      "room_tone_mix": 0.05
+    },
+    "flat_pitch": {
+      "description": "Compress F0 contour toward sentence mean",
+      "method": "pyworld_f0_compression",
+      "retained_variance_pct": {
+        "1": 75,
+        "2": 50,
+        "3": 25,
+        "4": 5
+      }
+    },
+    "mumbled_clarity": {
+      "description": "Gain reduction + high-frequency smear",
+      "method": "gain_plus_lowpass",
+      "params": {
+        "1": {"gain_db": -3, "lowpass_hz": 6000},
+        "2": {"gain_db": -6, "lowpass_hz": 4500},
+        "3": {"gain_db": -9, "lowpass_hz": 3500},
+        "4": {"gain_db": -12, "lowpass_hz": 2500}
+      },
+      "crossfade_ms": 30
+    }
+  },
+  "seed": 7,
+  "output_format": {
+    "sample_rate": 16000,
+    "channels": 1,
+    "bit_depth": 16,
+    "format": "wav"
+  }
+}
