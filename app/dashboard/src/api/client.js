@@ -10,7 +10,7 @@ export const uploadAudio = async (idealFile, participantFile) => {
   const formData = new FormData();
   formData.append('ideal', idealFile);
   formData.append('participant', participantFile);
-  
+
   const response = await client.post('/upload', formData, {
     headers: { 'Content-Type': 'multipart/form-data' }
   });
@@ -33,6 +33,8 @@ export const getDemoData = async () => {
     setTimeout(() => {
       resolve({
         id: "demo-result-001",
+        idealAudioUrl: '/demo/T1_ideal_1.wav',
+        participantAudioUrl: '/demo/T1_rushed.wav',
         overall_scores: {
           pace: 3,
           pause: 1,
@@ -92,16 +94,16 @@ export const getDemoData = async () => {
           }
         ],
         timelines: {
-          time: Array.from({length: 100}, (_, i) => i * 0.15),
+          time: Array.from({ length: 100 }, (_, i) => i * 0.15),
           ideal: {
-            rate: Array.from({length: 100}, () => 3.5 + Math.random()),
-            pitch: Array.from({length: 100}, () => 120 + Math.sin(Math.random()) * 20),
-            energy: Array.from({length: 100}, () => 0.5 + Math.random() * 0.2)
+            rate: Array.from({ length: 100 }, () => 3.5 + Math.random()),
+            pitch: Array.from({ length: 100 }, () => 120 + Math.sin(Math.random()) * 20),
+            energy: Array.from({ length: 100 }, () => 0.5 + Math.random() * 0.2)
           },
           participant: {
-            rate: Array.from({length: 100}, (_, i) => (i > 10 && i < 21) ? 6.0 : 3.5 + Math.random()),
-            pitch: Array.from({length: 100}, (_, i) => (i > 56 && i < 73) ? 100 : 120 + Math.sin(Math.random()) * 10),
-            energy: Array.from({length: 100}, () => 0.4 + Math.random() * 0.3)
+            rate: Array.from({ length: 100 }, (_, i) => (i > 10 && i < 21) ? 6.0 : 3.5 + Math.random()),
+            pitch: Array.from({ length: 100 }, (_, i) => (i > 56 && i < 73) ? 100 : 120 + Math.sin(Math.random()) * 10),
+            energy: Array.from({ length: 100 }, () => 0.4 + Math.random() * 0.3)
           }
         }
       });
