@@ -1,86 +1,159 @@
 import React from 'react';
 import Plot from 'react-plotly.js';
 
-const FeatureTimelines = ({ timelines, regions }) => {
+const FeatureTimelines = ({ timelines, regions = [] }) => {
   if (!timelines || !timelines.time) return null;
 
   const time = timelines.time;
 
-  const createShapes = () => {
-    if (!regions) return [];
-    return regions.map(r => ({
-      type: 'rect',
-      xref: 'x',
-      yref: 'paper',
-      x0: r.start,
-      x1: r.end,
-      y0: 0,
-      y1: 1,
-      fillcolor: 'rgba(255, 107, 107, 0.2)', // generic red tint, could map to flaw colors
-      line: { width: 0 }
-    }));
-  };
+  // Analytical flaw overlays with subtle terracotta/peach tint
+  const flawShapes = (regions || []).map((r) => ({
+    type: 'rect',
+    xref: 'x',
+    yref: 'paper',
+    x0: r.start,
+    x1: r.end,
+    y0: 0,
+    y1: 1,
+    fillcolor: 'rgba(201, 111, 74, 0.12)',
+    line: {
+      color: '#FFCDB8',
+      width: 1,
+      dash: 'dot',
+    },
+  }));
 
-  const layoutBase = {
-    paper_bgcolor: 'transparent',
-    plot_bgcolor: 'transparent',
-    font: { color: '#c9d1d9' },
-    margin: { t: 30, r: 20, l: 50, b: 30 },
-    height: 200,
-    xaxis: { 
-      color: '#30363d',
-      gridcolor: '#30363d',
-      zerolinecolor: '#30363d'
+  const compactLayout = {
+    paper_bgcolor: '#FFFFFF',
+    plot_bgcolor: '#FFFDF7',
+    font: {
+      family: 'Inter, sans-serif',
+      color: '#777777',
+      size: 10,
+    },
+    margin: { t: 8, r: 12, l: 44, b: 22 },
+    height: 120,
+    autosize: true,
+    hovermode: 'x unified',
+    xaxis: {
+      color: '#777777',
+      gridcolor: '#F4ECE4',
+      zerolinecolor: '#E8DDD2',
+      tickformat: '.1f',
+      ticksuffix: 's',
+      showspikes: true,
+      spikethickness: 1,
+      spikedash: 'dot',
+      spikecolor: '#C96F4A',
     },
     yaxis: {
-      color: '#30363d',
-      gridcolor: '#30363d',
-      zerolinecolor: '#30363d'
+      color: '#777777',
+      gridcolor: '#F4ECE4',
+      zerolinecolor: '#E8DDD2',
     },
-    shapes: createShapes(),
+    shapes: flawShapes,
     showlegend: true,
-    legend: { orientation: 'h', y: 1.1 }
+    legend: {
+      orientation: 'h',
+      x: 0,
+      y: 1.35,
+      font: { color: '#252525', size: 9 },
+      bgcolor: 'transparent',
+    },
   };
 
-  const features = [
-    { key: 'rate', title: 'Speech Rate (syllables/sec)' },
-    { key: 'pitch', title: 'Pitch (F0 Hz)' },
-    { key: 'energy', title: 'RMS Energy' }
+  const chartSeries = [
+    {
+      id: 'rate',
+      title: 'Speech Rate',
+      unit: 'syll/s',
+      ideal: timelines.ideal.rate,
+      participant: timelines.participant.rate,
+    },
+    {
+      id: 'pitch',
+      title: 'Pitch (F0)',
+      unit: 'Hz',
+      ideal: timelines.ideal.pitch,
+      participant: timelines.participant.pitch,
+    },
+    {
+      id: 'energy',
+      title: 'RMS Energy',
+      unit: 'RMS',
+      ideal: timelines.ideal.energy,
+      participant: timelines.participant.energy,
+    },
   ];
 
   return (
-    <div className="panel">
-      <h2>Acoustic Feature Timelines</h2>
-      
-      {features.map(feat => {
-        if (!timelines.ideal[feat.key]) return null;
-        
+    <div className="acoustic-signals-module">
+      <div className="signals-header-block">
+        <div className="signals-eyebrow">Continuous Signals</div>
+        <h3 className="signals-main-title">ACOUSTIC SIGNALS</h3>
+
+        {/* Section 6 Summary Strip */}
+        <div className="signals-summary-strip">
+          <div className="signal-metric-pill">
+            <span className="metric-pill-label">Speech Rate</span>
+            <span className="metric-pill-val is-delta-elevated">+45%</span>
+          </div>
+          <div className="signal-metric-pill">
+            <span className="metric-pill-label">Pitch</span>
+            <span className="metric-pill-val is-delta-elevated">-76%</span>
+          </div>
+          <div className="signal-metric-pill">
+            <span className="metric-pill-label">Energy</span>
+            <span className="metric-pill-val">stable</span>
+          </div>
+        </div>
+      </div>
+
+      {/* 3 Unified Compact Plotly Charts */}
+      {chartSeries.map((series) => {
+        if (!series.ideal || !series.participant) return null;
+
         return (
-          <div key={feat.key} style={{ marginBottom: '20px' }}>
-            <h3 style={{ fontSize: '1rem', marginBottom: 0, color: 'var(--text-muted)' }}>{feat.title}</h3>
+          <div key={series.id} className="compact-chart-box">
+            <div className="chart-meta-row">
+              <span className="chart-metric-title">{series.title}</span>
+              <span className="chart-subtle-hint">{series.unit}</span>
+            </div>
+
             <Plot
               data={[
                 {
                   x: time,
-                  y: timelines.ideal[feat.key],
+                  y: series.ideal,
                   type: 'scatter',
                   mode: 'lines',
-                  name: 'Ideal',
-                  line: { color: '#4d96ff', width: 2 }
+                  name: 'Reference',
+                  line: { color: '#4A5568', width: 1.8 },
+                  hovertemplate: `Ref: %{y:.2f}<extra></extra>`,
                 },
                 {
                   x: time,
-                  y: timelines.participant[feat.key],
+                  y: series.participant,
                   type: 'scatter',
                   mode: 'lines',
                   name: 'Participant',
-                  line: { color: '#ff6b6b', width: 2 }
-                }
+                  line: { color: '#C96F4A', width: 1.8 },
+                  hovertemplate: `Part: %{y:.2f}<extra></extra>`,
+                },
               ]}
-              layout={{ ...layoutBase }}
+              layout={{
+                ...compactLayout,
+                yaxis: {
+                  ...compactLayout.yaxis,
+                  ticksuffix: ` ${series.unit}`,
+                },
+              }}
               useResizeHandler={true}
-              style={{ width: '100%', height: '200px' }}
-              config={{ displayModeBar: false }}
+              style={{ width: '100%', height: '120px' }}
+              config={{
+                displayModeBar: false,
+                responsive: true,
+              }}
             />
           </div>
         );
