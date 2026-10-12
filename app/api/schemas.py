@@ -41,10 +41,17 @@ class DetectionResult(BaseModel):
     regions: List[Region]
     scores: Scores
     run: Run
+    idealAudioUrl: Optional[str] = None
+    participantAudioUrl: Optional[str] = None
+    overall_scores: Optional[Scores] = None
+    timelines: Optional[dict] = None
 
 class AnalyzeRequest(BaseModel):
     upload_id: str
-    transcript: str
+    transcript: Optional[str] = ""
+
+class AnalyzePayload(BaseModel):
+    transcript: Optional[str] = ""
 
 class UploadResponse(BaseModel):
     upload_id: str

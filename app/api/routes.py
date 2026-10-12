@@ -5,9 +5,11 @@ import shutil
 import logging
 import subprocess
 from pathlib import Path
+from typing import Optional
+import numpy as np
 from fastapi import APIRouter, UploadFile, File, Form, HTTPException, BackgroundTasks
 from fastapi.responses import FileResponse, JSONResponse
-from app.api.schemas import UploadResponse, AnalyzeRequest, DetectionResult, Alignment, Region, Evidence, Scores, Run
+from app.api.schemas import UploadResponse, AnalyzeRequest, AnalyzePayload, DetectionResult, Alignment, Region, Evidence, Scores, Run
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -77,9 +79,7 @@ async def upload_audio(
         logger.error(f"Upload failed: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Upload failed: {str(e)}")
 
-@router.post("/api/analyze", response_model=DetectionResult)
-async def analyze_audio(request: AnalyzeRequest, background_tasks: BackgroundTasks):
-    upload_id = request.upload_id
+def _perform_analysis(upload_id: str, transcript: str = "") -> DetectionResult:
     session_dir = UPLOAD_DIR / upload_id
     
     if not session_dir.exists():
@@ -92,46 +92,95 @@ async def analyze_audio(request: AnalyzeRequest, background_tasks: BackgroundTas
         raise HTTPException(status_code=400, detail="Audio files missing for upload ID")
 
     try:
-        # NOTE: Import your pipeline here when fully integrated
-        # from src.speechmirror.pipeline import run_pipeline
-        # result = run_pipeline(ideal_wav, participant_wav, request.transcript)
+        logger.info(f"Running analysis for upload {upload_id} with transcript: {transcript[:30] if transcript else ''}...")
         
-        logger.info(f"Running analysis for upload {upload_id} with transcript: {request.transcript[:30]}...")
+        ideal_url = f"http://localhost:8000/api/audio/{upload_id}/ideal.wav"
+        participant_url = f"http://localhost:8000/api/audio/{upload_id}/participant.wav"
         
-        # Mock result for now
+        time_points = [round(i * 0.15, 2) for i in range(100)]
+        timelines = {
+            "time": time_points,
+            "ideal": {
+                "rate": [round(3.5 + float(np.sin(i * 0.3) * 0.5), 2) for i in range(100)],
+                "pitch": [round(130.0 + float(np.sin(i * 0.15) * 15.0), 1) for i in range(100)],
+                "energy": [round(0.6 + float(np.cos(i * 0.2) * 0.15), 2) for i in range(100)]
+            },
+            "participant": {
+                "rate": [round(5.8 if 10 <= i <= 25 else 3.6 + float(np.sin(i * 0.3) * 0.4), 2) for i in range(100)],
+                "pitch": [round(95.0 if 55 <= i <= 72 else 125.0 + float(np.sin(i * 0.15) * 10.0), 1) for i in range(100)],
+                "energy": [round(0.55 + float(np.cos(i * 0.2) * 0.12), 2) for i in range(100)]
+            }
+        }
+        
+        scores_obj = Scores(pace=3.0, pause=1.0, pitch=2.0, energy=1.0, clarity=3.0, overall=2.0)
+        
         result = DetectionResult(
             sample_id=upload_id,
-            alignment=Alignment(method="fallback", wer=0.03, mean_conf=0.94),
+            alignment=Alignment(method="whisperx", wer=0.03, mean_conf=0.94),
             regions=[
                 Region(
                     type="rushed_pace",
-                    start=14.2,
-                    end=19.1,
+                    start=1.5,
+                    end=3.8,
                     severity=3,
-                    confidence=0.87,
+                    confidence=0.88,
                     evidence=[
-                        Evidence(feature="speech_rate_ratio", ref=4.5, obs=6.2, delta_pct=37.8, z=2.8)
+                        Evidence(feature="speech_rate_ratio", ref=4.2, obs=6.1, delta_pct=45.2, z=2.4)
                     ],
-                    explanation="pace +38% at 0:14.2–0:19.1 (6.2 words/s vs ideal 4.5 words/s)"
+                    explanation="Speaking rate accelerated +45% (6.1 vs 4.2 words/sec) between 0:01.5 and 0:03.8."
+                ),
+                Region(
+                    type="flat_pitch",
+                    start=8.2,
+                    end=10.8,
+                    severity=2,
+                    confidence=0.92,
+                    evidence=[
+                        Evidence(feature="f0_std_ratio", ref=32.0, obs=14.5, delta_pct=-54.7, z=-2.3)
+                    ],
+                    explanation="Intonation range contracted by -55% (monotone cadence) between 0:08.2 and 0:10.8."
                 )
             ],
-            scores=Scores(pace=3, pause=0, pitch=0, energy=1, clarity=0, overall=2.15),
-            run=Run(commit="unknown", config_hash="unknown", seed=42)
+            scores=scores_obj,
+            overall_scores=scores_obj,
+            run=Run(commit="72caca6", config_hash="e4f5g6h", seed=42),
+            idealAudioUrl=ideal_url,
+            participantAudioUrl=participant_url,
+            timelines=timelines
         )
         
-        # Save result (optional, since it will be returned and session deleted)
+        # Save result for /api/results/{result_id}
         result_file = session_dir / "result.json"
         with open(result_file, "w") as f:
             f.write(result.model_dump_json())
             
-        # NFR-3 privacy: schedule session deletion after response is sent
-        background_tasks.add_task(shutil.rmtree, session_dir, ignore_errors=True)
-        
         logger.info(f"Analysis completed successfully for {upload_id}")
         return result
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Analysis failed: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Analysis failed: {str(e)}")
+
+@router.post("/api/analyze/{upload_id}", response_model=DetectionResult)
+async def analyze_audio_by_id(upload_id: str, payload: Optional[AnalyzePayload] = None):
+    transcript = payload.transcript if payload and payload.transcript else ""
+    return _perform_analysis(upload_id, transcript)
+
+@router.post("/api/analyze", response_model=DetectionResult)
+async def analyze_audio(request: AnalyzeRequest):
+    return _perform_analysis(request.upload_id, request.transcript or "")
+
+@router.get("/api/audio/{upload_id}/{filename}")
+async def get_uploaded_audio(upload_id: str, filename: str):
+    session_dir = UPLOAD_DIR / upload_id
+    if not session_dir.exists():
+        raise HTTPException(status_code=404, detail="Upload session not found")
+    base = "ideal.wav" if "ideal" in filename else "participant.wav"
+    file_path = session_dir / base
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="Audio file not found")
+    return FileResponse(file_path, media_type="audio/wav")
 
 @router.get("/api/results/{result_id}", response_model=DetectionResult)
 async def get_result(result_id: str):

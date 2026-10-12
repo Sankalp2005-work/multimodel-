@@ -45,3 +45,4 @@ Thumbs.db
 
 # Generated / synthetic audio
 data/processed/wav/*_synth_*.wav
+data/uploads/

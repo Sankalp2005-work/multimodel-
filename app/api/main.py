@@ -36,6 +36,15 @@ app.add_middleware(
 
 app.include_router(router)
 
+@app.get("/")
+def root():
+    return {
+        "status": "ok",
+        "service": "SpeechMirror API",
+        "docs": "/docs",
+        "health": "/health"
+    }
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run("app.api.main:app", host="0.0.0.0", port=8000, reload=True)
