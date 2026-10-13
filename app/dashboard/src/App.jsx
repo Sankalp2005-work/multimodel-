@@ -116,6 +116,8 @@ function App() {
             idealUrl={analysisData.idealAudioUrl}
             participantUrl={analysisData.participantAudioUrl}
             regions={analysisData.regions}
+            alignment={analysisData.alignment}
+            words={analysisData.words}
             activePlayRegion={activePlayRegion}
             onRegionSelected={(r) => handleRegionClick(r.start, r.end)}
           />

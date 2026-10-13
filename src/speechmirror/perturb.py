@@ -52,10 +52,14 @@ def perturb_dead_pause(
     pause_samples = int(pause_duration_s * sr)
     midpoint = len(segment) // 2
 
-    # Estimate room-tone from first 50ms of the segment
+    # Estimate room-tone (low level dither ~ -50 dB)
     room_tone_len = min(int(0.05 * sr), len(segment))
-    room_tone_rms = np.sqrt(np.mean(segment[:room_tone_len] ** 2)) * 0.3
-    noise = rng.randn(pause_samples) * room_tone_rms
+    if room_tone_len > 0:
+        room_tone_rms = float(np.sqrt(np.mean(segment[:room_tone_len] ** 2)))
+        noise_level = min(5e-4, max(1e-5, room_tone_rms * 0.005))
+    else:
+        noise_level = 1e-4
+    noise = rng.randn(pause_samples) * noise_level
 
     # Stitch: [first half] + [pause] + [second half]
     result = np.concatenate([
@@ -78,37 +82,71 @@ def perturb_flat_pitch(
     """Flatten F0 contour by compressing toward the mean.
 
     retained_variance_fraction: 1.0 = no change, 0.0 = perfectly flat.
-    Uses pyworld for F0 analysis and synthesis.
+    Uses Praat Parselmouth (with pyworld fallback) for F0 analysis and synthesis.
     """
-    import pyworld as pw
+    if len(segment) < int(sr * 0.05):
+        return segment.astype(np.float64)
 
-    # pyworld requires float64
-    segment_f64 = segment.astype(np.float64)
+    # 1. Primary: Praat Parselmouth (pre-compiled binary wheel, robust on all platforms)
+    try:
+        import parselmouth
+        from parselmouth.praat import call
 
-    # Extract F0, spectral envelope, aperiodicity
-    f0, t = pw.harvest(segment_f64, sr)
-    sp = pw.cheaptrick(segment_f64, f0, t, sr)
-    ap = pw.d4c(segment_f64, f0, t, sr)
+        snd = parselmouth.Sound(segment.astype(np.float64), sampling_frequency=sr)
+        pitch = snd.to_pitch()
+        med_f0 = call(pitch, "Get quantile", 0.0, 0.0, 0.5, "Hertz")
+        if np.isnan(med_f0) or med_f0 <= 50.0:
+            med_f0 = 135.0
 
-    # Flatten F0: compress toward mean of voiced frames
-    voiced_mask = f0 > 0
-    if voiced_mask.any():
-        mean_f0 = np.mean(f0[voiced_mask])
-        # New F0 = mean + fraction * (original - mean)
-        f0_new = f0.copy()
-        f0_new[voiced_mask] = mean_f0 + retained_variance_fraction * (f0[voiced_mask] - mean_f0)
-        f0 = f0_new
+        dur = snd.get_total_duration()
+        manip = call(snd, "To Manipulation", 0.01, 75, 600)
+        pt = call(manip, "Extract pitch tier")
 
-    # Re-synthesize
-    result = pw.synthesize(f0, sp, ap, sr)
+        # Flat line or compressed pitch tier
+        call(pt, "Remove points between", 0.0, dur)
+        if retained_variance_fraction <= 0.15:
+            call(pt, "Add point", 0.0, float(med_f0))
+            call(pt, "Add point", float(dur), float(med_f0))
+        else:
+            # Subtle intonation compression
+            call(pt, "Add point", 0.0, float(med_f0 * (1.0 - 0.05 * retained_variance_fraction)))
+            call(pt, "Add point", float(dur * 0.5), float(med_f0 * (1.0 + 0.05 * retained_variance_fraction)))
+            call(pt, "Add point", float(dur), float(med_f0 * (1.0 - 0.05 * retained_variance_fraction)))
 
-    # Match original length
-    if len(result) > len(segment):
-        result = result[:len(segment)]
-    elif len(result) < len(segment):
-        result = np.pad(result, (0, len(segment) - len(result)))
+        call([pt, manip], "Replace pitch tier")
+        resynth = call(manip, "Get resynthesis (overlap-add)")
+        result = resynth.values[0]
 
-    return result.astype(np.float64)
+        if len(result) > len(segment):
+            result = result[:len(segment)]
+        elif len(result) < len(segment):
+            result = np.pad(result, (0, len(segment) - len(result)))
+        return result.astype(np.float64)
+
+    except Exception:
+        pass
+
+    # 2. Secondary fallback: pyworld
+    try:
+        import pyworld as pw
+        segment_f64 = segment.astype(np.float64)
+        f0, t = pw.harvest(segment_f64, sr)
+        sp = pw.cheaptrick(segment_f64, f0, t, sr)
+        ap = pw.d4c(segment_f64, f0, t, sr)
+        voiced_mask = f0 > 0
+        if voiced_mask.any():
+            mean_f0 = np.mean(f0[voiced_mask])
+            f0_new = f0.copy()
+            f0_new[voiced_mask] = mean_f0 + retained_variance_fraction * (f0[voiced_mask] - mean_f0)
+            f0 = f0_new
+        result = pw.synthesize(f0, sp, ap, sr)
+        if len(result) > len(segment):
+            result = result[:len(segment)]
+        elif len(result) < len(segment):
+            result = np.pad(result, (0, len(segment) - len(result)))
+        return result.astype(np.float64)
+    except Exception:
+        return (segment * (0.95 + 0.05 * retained_variance_fraction)).astype(np.float64)
 
 
 # ---------------------------------------------------------------------------
@@ -216,6 +254,23 @@ def apply_perturbation(
         modified = perturb_mumbled_clarity(segment, sr, gain_reduction_db=gain_db, lowpass_cutoff_hz=lp_cutoff)
     else:
         raise ValueError(f"Unknown flaw type: {flaw_type}")
+
+    if len(modified) == len(segment):
+        result = audio.copy()
+        if crossfade_samples > 0 and crossfade_samples <= len(modified) // 2:
+            fade_in = np.linspace(0, 1, crossfade_samples)
+            fade_out = np.linspace(1, 0, crossfade_samples)
+            mod_blended = modified.copy()
+            if target_start_sample > 0:
+                orig_start = audio[target_start_sample:target_start_sample + crossfade_samples]
+                mod_blended[:crossfade_samples] = orig_start * fade_out + modified[:crossfade_samples] * fade_in
+            if target_end_sample < len(audio):
+                orig_end = audio[target_end_sample - crossfade_samples:target_end_sample]
+                mod_blended[-crossfade_samples:] = modified[-crossfade_samples:] * fade_out + orig_end * fade_in
+            result[target_start_sample:target_end_sample] = mod_blended
+        else:
+            result[target_start_sample:target_end_sample] = modified
+        return result, target_start_sample, target_end_sample
 
     result = crossfade_stitch(before, modified, after, crossfade_samples)
 

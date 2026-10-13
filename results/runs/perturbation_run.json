@@ -3,5 +3,5 @@
   "config": "configs/perturb.json",
   "seed": 7,
   "generated_count": 96,
-  "total_manifest_rows": 124
+  "total_manifest_rows": 316
 }

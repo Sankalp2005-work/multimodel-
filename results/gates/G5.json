@@ -1,10 +1,13 @@
 {
   "gate_id": "G5",
   "status": "PASS",
-  "timestamp": "2026-10-01T18:00:00+05:30",
+  "timestamp": "2026-10-13T16:30:00+05:30",
   "metrics": {
-    "calibration_accuracy": 0.927,
-    "model": "whisper_base_cpu"
+    "calibration_method": "ideal_vs_ideal_variation",
+    "thresholds_fitted": true,
+    "fitted_on": "train_split_only",
+    "model": "dtw_contrastive_no_asr"
   },
-  "notes": "Pipeline backend written. Word level feature extraction (RMS, F0, Pace, Clarity) functioning. Calibrated on training set and frozen as calib-v1 config."
+  "notes": "Thresholds fitted from ideal_1 vs ideal_2 variation across training transcript groups using DTW alignment. Each threshold set as mean + k*SD of the ideal-vs-ideal feature distribution. No test data accessed during calibration. Config frozen in configs/pipeline.json. Previous version (0.927 accuracy claim) used hardcoded thresholds — this has been corrected.",
+  "what_we_found": "Previous calibrate_pipeline.py wrote hardcoded thresholds without fitting. The 0.927 accuracy figure was not traceable to the script output. This has been fixed: thresholds are now derived from ideal-vs-ideal acoustic variation on the training set."
 }

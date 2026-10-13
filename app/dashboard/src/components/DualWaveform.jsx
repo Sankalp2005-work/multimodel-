@@ -12,10 +12,20 @@ const FLAW_ANNOTATION_COLORS = {
   mumbled_clarity: 'rgba(74, 112, 160, 0.18)',
 };
 
+const resolveAudioUrl = (url) => {
+  if (!url) return url;
+  if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('blob:')) return url;
+  const apiBase = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+  const origin = apiBase.replace(/\/api\/?$/, '');
+  return `${origin}${url.startsWith('/') ? '' : '/'}${url}`;
+};
+
 const DualWaveform = ({
   idealUrl,
   participantUrl,
   regions = [],
+  alignment = null,
+  words = null,
   activePlayRegion = null,
   onRegionSelected = null,
 }) => {
@@ -45,6 +55,46 @@ const DualWaveform = ({
       setPlaybackMode(mode);
     }
   }, []);
+
+  const warpingPath = alignment?.warping_path || null;
+
+  const mapPartTimeToIdeal = useCallback((tPart, dPart, dIdeal) => {
+    if (!warpingPath || warpingPath.length < 2) {
+      return dPart > 0 && dIdeal > 0 ? (tPart / dPart) * dIdeal : tPart;
+    }
+    let low = 0, high = warpingPath.length - 1;
+    while (low <= high) {
+      const mid = (low + high) >> 1;
+      if (warpingPath[mid][1] < tPart) low = mid + 1;
+      else high = mid - 1;
+    }
+    const idx = Math.min(Math.max(1, low), warpingPath.length - 1);
+    const p0 = warpingPath[idx - 1];
+    const p1 = warpingPath[idx];
+    const dt = p1[1] - p0[1];
+    if (Math.abs(dt) < 1e-4) return p0[0];
+    const alpha = Math.max(0, Math.min(1, (tPart - p0[1]) / dt));
+    return p0[0] + alpha * (p1[0] - p0[0]);
+  }, [warpingPath]);
+
+  const mapIdealTimeToPart = useCallback((tIdeal, dIdeal, dPart) => {
+    if (!warpingPath || warpingPath.length < 2) {
+      return dIdeal > 0 && dPart > 0 ? (tIdeal / dIdeal) * dPart : tIdeal;
+    }
+    let low = 0, high = warpingPath.length - 1;
+    while (low <= high) {
+      const mid = (low + high) >> 1;
+      if (warpingPath[mid][0] < tIdeal) low = mid + 1;
+      else high = mid - 1;
+    }
+    const idx = Math.min(Math.max(1, low), warpingPath.length - 1);
+    const p0 = warpingPath[idx - 1];
+    const p1 = warpingPath[idx];
+    const dt = p1[0] - p0[0];
+    if (Math.abs(dt) < 1e-4) return p0[1];
+    const alpha = Math.max(0, Math.min(1, (tIdeal - p0[0]) / dt));
+    return p0[1] + alpha * (p1[1] - p0[1]);
+  }, [warpingPath]);
 
   useEffect(() => {
     isMountedRef.current = true;
@@ -162,10 +212,12 @@ const DualWaveform = ({
     });
 
     // Load actual audio URLs
-    wsIdeal.load(idealUrl).catch((err) => {
+    const resolvedIdeal = resolveAudioUrl(idealUrl);
+    const resolvedPart = resolveAudioUrl(participantUrl);
+    wsIdeal.load(resolvedIdeal).catch((err) => {
       console.warn('Ideal load aborted or failed:', err);
     });
-    wsPart.load(participantUrl).catch((err) => {
+    wsPart.load(resolvedPart).catch((err) => {
       console.warn('Participant load aborted or failed:', err);
     });
 
@@ -206,15 +258,19 @@ const DualWaveform = ({
       }
     });
 
-    // Sync seeking across both waveforms
+    // Sync seeking across both waveforms using DTW warping path
     let isSeekingSync = false;
     wsIdeal.on('seek', (prog) => {
       if (isSeekingSync) return;
       isSeekingSync = true;
       try {
-        if (wsPart && Math.abs(wsPart.getProgress() - prog) > 0.005) wsPart.seekTo(prog);
-        const maxDur = Math.max(wsIdeal.getDuration() || 0, wsPart?.getDuration() || 0) || 18.0;
-        if (isMounted) setCurrentTime(prog * maxDur);
+        const dIdeal = wsIdeal.getDuration() || 1.0;
+        const dPart = wsPart?.getDuration() || 1.0;
+        const tIdeal = prog * dIdeal;
+        const tPart = mapIdealTimeToPart(tIdeal, dIdeal, dPart);
+        const progPart = Math.max(0, Math.min(1, tPart / dPart));
+        if (wsPart && Math.abs(wsPart.getProgress() - progPart) > 0.005) wsPart.seekTo(progPart);
+        if (isMounted) setCurrentTime(tPart);
       } catch (e) {}
       isSeekingSync = false;
     });
@@ -223,9 +279,13 @@ const DualWaveform = ({
       if (isSeekingSync) return;
       isSeekingSync = true;
       try {
-        if (wsIdeal && Math.abs(wsIdeal.getProgress() - prog) > 0.005) wsIdeal.seekTo(prog);
-        const maxDur = Math.max(wsIdeal?.getDuration() || 0, wsPart.getDuration() || 0) || 18.0;
-        if (isMounted) setCurrentTime(prog * maxDur);
+        const dPart = wsPart.getDuration() || 1.0;
+        const dIdeal = wsIdeal?.getDuration() || 1.0;
+        const tPart = prog * dPart;
+        const tIdeal = mapPartTimeToIdeal(tPart, dPart, dIdeal);
+        const progIdeal = Math.max(0, Math.min(1, tIdeal / dIdeal));
+        if (wsIdeal && Math.abs(wsIdeal.getProgress() - progIdeal) > 0.005) wsIdeal.seekTo(progIdeal);
+        if (isMounted) setCurrentTime(tPart);
       } catch (e) {}
       isSeekingSync = false;
     });
@@ -297,17 +357,21 @@ const DualWaveform = ({
         }
       } catch (e) {}
     };
-  }, [idealUrl, participantUrl, regions, updatePlaybackMode]);
+  }, [idealUrl, participantUrl, regions, updatePlaybackMode, mapIdealTimeToPart, mapPartTimeToIdeal]);
 
   const playSpan = useCallback((start, end) => {
     clearRegionTimer();
     if (!idealWs.current || !partWs.current || !isReady) return;
 
-    const safeDuration = duration || 18.0;
-    const progressStart = Math.min(1.0, Math.max(0, start / safeDuration));
+    const dPart = partWs.current.getDuration() || duration || 18.0;
+    const dIdeal = idealWs.current.getDuration() || duration || 18.0;
+    const progPart = Math.min(1.0, Math.max(0, start / dPart));
 
-    idealWs.current.seekTo(progressStart);
-    partWs.current.seekTo(progressStart);
+    const tIdealStart = mapPartTimeToIdeal(start, dPart, dIdeal);
+    const progIdeal = Math.min(1.0, Math.max(0, tIdealStart / dIdeal));
+
+    idealWs.current.seekTo(progIdeal);
+    partWs.current.seekTo(progPart);
     idealWs.current.setPlaybackRate(playbackSpeed);
     partWs.current.setPlaybackRate(playbackSpeed);
     idealWs.current.play().catch(() => {});
@@ -320,7 +384,7 @@ const DualWaveform = ({
       if (partWs.current) partWs.current.pause();
       updatePlaybackMode('none');
     }, playMs);
-  }, [isReady, duration, playbackSpeed, updatePlaybackMode]);
+  }, [isReady, duration, playbackSpeed, updatePlaybackMode, mapPartTimeToIdeal]);
 
   useEffect(() => {
     if (activePlayRegion && isReady) {
@@ -558,6 +622,7 @@ const DualWaveform = ({
 
       {/* Word Alignment Strip */}
       <WordAlignmentStrip
+        tokens={words}
         activeTime={currentTime}
         onWordClick={(start, end) => playSpan(start, end)}
       />

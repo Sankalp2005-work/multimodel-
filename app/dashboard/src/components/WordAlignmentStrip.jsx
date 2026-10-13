@@ -25,9 +25,13 @@ const TRANSCRIPT_TOKENS = [
   { id: 'w22', word: 'resonance.', start: 15.38, end: 16.78, isFlawed: true, flawType: 'mumbled_clarity' },
 ];
 
-const WordAlignmentStrip = ({ onWordClick = null, activeTime = null }) => {
+const WordAlignmentStrip = ({ tokens = null, onWordClick = null, activeTime = null }) => {
   const [selectedId, setSelectedId] = useState(null);
   const [hoveredToken, setHoveredToken] = useState(null);
+
+  const currentTokens = (tokens && Array.isArray(tokens) && tokens.length > 0)
+    ? tokens
+    : TRANSCRIPT_TOKENS;
 
   const handleClick = (token) => {
     setSelectedId(token.id);
@@ -57,7 +61,7 @@ const WordAlignmentStrip = ({ onWordClick = null, activeTime = null }) => {
       </div>
 
       <div className="word-tokens-container">
-        {TRANSCRIPT_TOKENS.map((token) => {
+        {currentTokens.map((token) => {
           const isSelected = selectedId === token.id;
           const isCurrentlyActive =
             activeTime !== null && activeTime >= token.start && activeTime <= token.end;

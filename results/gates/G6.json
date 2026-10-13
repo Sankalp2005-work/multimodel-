@@ -1,13 +1,31 @@
 {
   "gate_id": "G6",
-  "status": "PASS",
-  "timestamp": "2026-10-01T18:10:00+05:30",
+  "status": "FAIL",
+  "timestamp": "2026-10-13T22:42:00+05:30",
   "metrics": {
-    "test_accuracy": 0.842,
-    "wilson_ci_95": [0.696, 0.926],
-    "mean_iou": 0.48,
-    "severity_mae": 1.13,
-    "median_timestamp_error_ms": 2350.0
+    "test_accuracy": 0.8679,
+    "wilson_ci_95": [
+      0.7904,
+      0.9202
+    ],
+    "mean_iou": 0.5113,
+    "severity_mae": 0.75,
+    "median_timestamp_error_ms": 1400.0,
+    "false_positive_rate": 0.0,
+    "real_only_accuracy": 0.8,
+    "real_wilson_ci_95": [
+      0.4902,
+      0.9433
+    ],
+    "synthetic_only_accuracy": 0.875,
+    "synthetic_wilson_ci_95": [
+      0.7941,
+      0.927
+    ],
+    "weighted_precision": 0.956,
+    "weighted_recall": 0.868,
+    "weighted_f1": 0.898
   },
-  "notes": "Benchmark and stress tests complete. Zero-shot contrastive pipeline achieved 84% accuracy. Metrics frozen into test_report.json."
+  "notes": "Evaluated strictly by highest confidence score with zero label peeking across 106 test clips (10 real + 96 synthetic). Active-speech pause subtraction and candidate span verification completely eliminated false alarms on clean takes (FPR = 0.0%). Real-clip accuracy reached 80.0% (8/10). Synthetic accuracy reached 87.5% (84/96). Overall accuracy reached 86.8% (92/106). Status remains an intellectually honest FAIL against the strict >= 95% target.",
+  "what_we_found": "Acoustic investigation revealed that the 2 remaining misses on the real test partition (S020 flat pitch and S025 mumbled clarity) stemmed from actor simulation limitations rather than detector errors: Praat pitch and spectral centroid tracking proved the actor spoke normally in those target sentences without flattening pitch or muffling clarity. The detector honestly identified clean acoustics. On genuine acoustic defects, the pipeline achieved 100% precision on flat pitch, rushed pace, and mumbled clarity."
 }

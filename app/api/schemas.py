@@ -21,6 +21,16 @@ class Alignment(BaseModel):
     method: str
     wer: float
     mean_conf: float
+    warping_path: Optional[List[List[float]]] = None
+
+class WordToken(BaseModel):
+    id: str
+    word: str
+    start: float
+    end: float
+    isFlawed: bool = False
+    flawType: Optional[str] = None
+    isPause: bool = False
 
 class Scores(BaseModel):
     pace: float
@@ -45,6 +55,7 @@ class DetectionResult(BaseModel):
     participantAudioUrl: Optional[str] = None
     overall_scores: Optional[Scores] = None
     timelines: Optional[dict] = None
+    words: Optional[List[WordToken]] = None
 
 class AnalyzeRequest(BaseModel):
     upload_id: str

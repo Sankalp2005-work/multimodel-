@@ -1,11 +1,14 @@
 {
   "gate_id": "G4",
-  "status": "PASS",
-  "timestamp": "2026-10-01T16:55:00+05:30",
+  "status": "CONDITIONAL_PASS",
+  "timestamp": "2026-10-13T16:30:00+05:30",
   "metrics": {
     "labels_generated": 124,
     "qa_pass_rate": 1.0,
-    "annotator": "auto_whisper"
+    "annotator": "auto_pipeline",
+    "human_blind_listen": "not_performed",
+    "cohens_kappa": "not_computed"
   },
-  "notes": "Blind annotation simulated via Whisper target sentence boundary detection. Dataset frozen as dataset-v1."
+  "notes": "Labels generated automatically by pipeline detection, not by independent human annotation. Blind-listen validation was not performed. QA pass rate reflects automated consistency check only. G4 criteria for dual human annotation and blind listening are NOT fully met. Cohen's kappa requires a second independent annotator which we do not have. Renamed annotator from misleading 'auto_whisper' to 'auto_pipeline'. The honest status is CONDITIONAL_PASS pending human validation.",
+  "what_we_found": "All 124 labels come from automated detection. No independent human annotator was used. This means A1 (label accuracy) cannot be claimed at 95% — it is unverified. The synthetic labels (96 clips) are correct by construction per G3. The 28 real-clip labels need human validation."
 }

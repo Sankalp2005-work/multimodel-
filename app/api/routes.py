@@ -9,7 +9,7 @@ from typing import Optional
 import numpy as np
 from fastapi import APIRouter, UploadFile, File, Form, HTTPException, BackgroundTasks
 from fastapi.responses import FileResponse, JSONResponse
-from app.api.schemas import UploadResponse, AnalyzeRequest, AnalyzePayload, DetectionResult, Alignment, Region, Evidence, Scores, Run
+from app.api.schemas import UploadResponse, AnalyzeRequest, AnalyzePayload, DetectionResult, Alignment, Region, Evidence, Scores, Run, WordToken
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -96,57 +96,140 @@ def _perform_analysis(upload_id: str, transcript: str = "") -> DetectionResult:
         
         ideal_url = f"http://localhost:8000/api/audio/{upload_id}/ideal.wav"
         participant_url = f"http://localhost:8000/api/audio/{upload_id}/participant.wav"
-        
-        time_points = [round(i * 0.15, 2) for i in range(100)]
+        from src.speechmirror.pipeline import SpeechMirrorPipeline
+
+        pipe = SpeechMirrorPipeline()
+        ideal_feats = pipe.extract_features(str(ideal_wav))
+        part_feats = pipe.extract_features(str(participant_wav))
+
+        config_path = Path("configs/pipeline.json")
+        config = {}
+        if config_path.exists():
+            with open(config_path, "r") as cf:
+                config = json.load(cf)
+
+        flaws = pipe.detect_flaws(part_feats, ideal_feats, config)
+
+        # Build detected regions with real evidence
+        regions = []
+        for f in flaws:
+            ev_list = []
+            for ev in f.get("evidence", []):
+                ev_list.append(Evidence(
+                    feature=str(ev.get("feature", f["type"])),
+                    ref=float(ev.get("ref", 0.0)),
+                    obs=float(ev.get("obs", float(f["severity"]))),
+                    delta_pct=float(ev.get("delta_pct", 0.0)),
+                    z=float(ev.get("z", 0.0))
+                ))
+            if not ev_list:
+                ev_list.append(Evidence(
+                    feature=f["type"],
+                    ref=0.0,
+                    obs=float(f["severity"]),
+                    delta_pct=0.0,
+                    z=0.0
+                ))
+            regions.append(Region(
+                type=f["type"],
+                start=float(f["start"]),
+                end=float(f["end"]),
+                severity=int(f["severity"]),
+                confidence=float(f.get("confidence", 0.8)),
+                evidence=ev_list,
+                explanation=f.get("explanation", "")
+            ))
+
+        # Compute rubric scores from real severities
+        score_map = {"rushed_pace": 0, "dead_pause": 0, "flat_pitch": 0, "mumbled_clarity": 0}
+        for f in flaws:
+            score_map[f["type"]] = max(score_map[f["type"]], int(f["severity"]))
+
+        scores_obj = Scores(
+            pace=float(score_map["rushed_pace"]),
+            pause=float(score_map["dead_pause"]),
+            pitch=float(score_map["flat_pitch"]),
+            energy=0.0,
+            clarity=float(score_map["mumbled_clarity"]),
+            overall=float(sum(score_map.values()) / 4.0)
+        )
+
+        # Build real frame-level timelines downsampled for UI charts
+        n_timeline = min(len(ideal_feats["frame_times"]), len(part_feats["frame_times"]), 120)
+        def downsample(arr, length):
+            if len(arr) <= length:
+                return [round(float(x), 2) for x in arr]
+            idx = np.linspace(0, len(arr) - 1, length, dtype=int)
+            return [round(float(arr[i]), 2) for i in idx]
+
+        time_points = downsample(part_feats["frame_times"], n_timeline)
         timelines = {
             "time": time_points,
             "ideal": {
-                "rate": [round(3.5 + float(np.sin(i * 0.3) * 0.5), 2) for i in range(100)],
-                "pitch": [round(130.0 + float(np.sin(i * 0.15) * 15.0), 1) for i in range(100)],
-                "energy": [round(0.6 + float(np.cos(i * 0.2) * 0.15), 2) for i in range(100)]
+                "rate": [3.5] * n_timeline,
+                "pitch": downsample(ideal_feats["features"]["f0_semitones"], n_timeline),
+                "energy": downsample(ideal_feats["features"]["rms_db"], n_timeline)
             },
             "participant": {
-                "rate": [round(5.8 if 10 <= i <= 25 else 3.6 + float(np.sin(i * 0.3) * 0.4), 2) for i in range(100)],
-                "pitch": [round(95.0 if 55 <= i <= 72 else 125.0 + float(np.sin(i * 0.15) * 10.0), 1) for i in range(100)],
-                "energy": [round(0.55 + float(np.cos(i * 0.2) * 0.12), 2) for i in range(100)]
+                "rate": [3.5] * n_timeline,
+                "pitch": downsample(part_feats["features"]["f0_semitones"], n_timeline),
+                "energy": downsample(part_feats["features"]["rms_db"], n_timeline)
             }
         }
-        
-        scores_obj = Scores(pace=3.0, pause=1.0, pitch=2.0, energy=1.0, clarity=3.0, overall=2.0)
-        
+
+        # Build subsampled warping path for frontend dual waveform synchronization
+        wp = pipe.dtw_align(part_feats, ideal_feats)
+        ideal_times = ideal_feats["frame_times"]
+        part_times = part_feats["frame_times"]
+        step = max(1, len(wp) // 150)
+        warping_path = [
+            [
+                round(float(ideal_times[min(int(wp[i, 1]), len(ideal_times) - 1)]), 3),
+                round(float(part_times[min(int(wp[i, 0]), len(part_times) - 1)]), 3)
+            ]
+            for i in range(0, len(wp), step)
+        ]
+        if len(wp) > 0 and len(warping_path) > 0:
+            last_pt = [round(float(ideal_times[-1]), 3), round(float(part_times[-1]), 3)]
+            if warping_path[-1] != last_pt:
+                warping_path.append(last_pt)
+
+        # Build dynamic word tokens from transcript or detected regions
+        word_tokens = []
+        part_dur = part_feats.get("duration", float(part_times[-1]) if len(part_times) > 0 else 10.0)
+        if transcript and transcript.strip():
+            raw_words = transcript.strip().split()
+            if raw_words:
+                time_per_word = part_dur / len(raw_words)
+                for idx, w in enumerate(raw_words):
+                    w_start = round(idx * time_per_word, 2)
+                    w_end = round((idx + 1) * time_per_word, 2)
+                    matched_flaw = None
+                    for r in regions:
+                        if not (w_end <= r.start or w_start >= r.end):
+                            matched_flaw = r.type
+                            break
+                    word_tokens.append(WordToken(
+                        id=f"w{idx+1}",
+                        word=w,
+                        start=w_start,
+                        end=w_end,
+                        isFlawed=matched_flaw is not None,
+                        flawType=matched_flaw,
+                        isPause=matched_flaw == "dead_pause"
+                    ))
+
         result = DetectionResult(
             sample_id=upload_id,
-            alignment=Alignment(method="whisperx", wer=0.03, mean_conf=0.94),
-            regions=[
-                Region(
-                    type="rushed_pace",
-                    start=1.5,
-                    end=3.8,
-                    severity=3,
-                    confidence=0.88,
-                    evidence=[
-                        Evidence(feature="speech_rate_ratio", ref=4.2, obs=6.1, delta_pct=45.2, z=2.4)
-                    ],
-                    explanation="Speaking rate accelerated +45% (6.1 vs 4.2 words/sec) between 0:01.5 and 0:03.8."
-                ),
-                Region(
-                    type="flat_pitch",
-                    start=8.2,
-                    end=10.8,
-                    severity=2,
-                    confidence=0.92,
-                    evidence=[
-                        Evidence(feature="f0_std_ratio", ref=32.0, obs=14.5, delta_pct=-54.7, z=-2.3)
-                    ],
-                    explanation="Intonation range contracted by -55% (monotone cadence) between 0:08.2 and 0:10.8."
-                )
-            ],
+            alignment=Alignment(method="dtw_contrastive", wer=0.0, mean_conf=0.92, warping_path=warping_path),
+            regions=regions,
             scores=scores_obj,
             overall_scores=scores_obj,
-            run=Run(commit="72caca6", config_hash="e4f5g6h", seed=42),
+            run=Run(commit="dtw-v1", config_hash="calib-fitted", seed=42),
             idealAudioUrl=ideal_url,
             participantAudioUrl=participant_url,
-            timelines=timelines
+            timelines=timelines,
+            words=word_tokens or None
         )
         
         # Save result for /api/results/{result_id}

@@ -12,7 +12,10 @@ from typing import Any, Dict, List, Optional
 
 import librosa
 import numpy as np
-import pyworld as pw
+try:
+    import pyworld as pw
+except ImportError:
+    pw = None
 
 logger = logging.getLogger(__name__)
 
@@ -115,15 +118,35 @@ def extract_frame_features(audio: np.ndarray, sr: int = 16000, config: Optional[
         logger.warning("Audio shorter than frame length. Padding.")
         audio = np.pad(audio, (0, n_fft - len(audio)))
         
-    # Pyworld F0 (dio + stonemask)
-    audio_f64 = audio.astype(np.float64)
-    _f0_hz, _times = pw.dio(audio_f64, sr, frame_period=hop_length_ms)
-    f0_hz = pw.stonemask(audio_f64, _f0_hz, _times, sr)
+    # F0 (dio + stonemask if pyworld available, else fast autocorrelation)
+    if pw is not None:
+        audio_f64 = audio.astype(np.float64)
+        _f0_hz, _times = pw.dio(audio_f64, sr, frame_period=hop_length_ms)
+        f0_hz = pw.stonemask(audio_f64, _f0_hz, _times, sr)
+    else:
+        n_frames = max(1, len(audio) // hop_length)
+        _times = librosa.frames_to_time(np.arange(n_frames), sr=sr, hop_length=hop_length)
+        f0_hz = np.zeros(n_frames, dtype=np.float64)
+        step_d = max(1, sr // 4000)
+        y_4k = audio[::step_d]
+        hop_4k = max(1, hop_length // step_d)
+        flen_4k = hop_4k * 4
+        min_l, max_l = int(4000 / 500), int(4000 / 60)
+        for i in range(min(n_frames, len(y_4k) // hop_4k)):
+            fr = y_4k[i * hop_4k:i * hop_4k + flen_4k]
+            if len(fr) >= max_l and np.std(fr) >= 1e-4:
+                fr_z = fr - np.mean(fr)
+                c = np.correlate(fr_z, fr_z, mode='full')
+                c = c[len(c) // 2:]
+                lags = c[min_l:max_l]
+                if len(lags) > 0 and np.max(lags) > 0.28 * c[0]:
+                    f0_hz[i] = 4000.0 / (min_l + np.argmax(lags))
     f0_log_st = hz_to_log_st(f0_hz)
     
     # Librosa features
     rms = librosa.feature.rms(y=audio, frame_length=n_fft, hop_length=hop_length, center=True)[0]
-    rms_db = librosa.amplitude_to_db(rms, ref=np.max)
+    ref_val = float(np.max(rms)) if np.max(rms) > 1e-6 else 1.0
+    rms_db = librosa.amplitude_to_db(rms, ref=ref_val)
     
     mfcc = librosa.feature.mfcc(y=audio, sr=sr, n_mfcc=n_mfcc, n_fft=n_fft, hop_length=hop_length, center=True)
     mfcc_delta = librosa.feature.delta(mfcc)
@@ -276,15 +299,14 @@ def compute_pause_durations(word_timestamps: List[Dict[str, Any]]) -> List[Dict[
         end_t = prev_word.get('end', 0.0)
         start_t = curr_word.get('start', 0.0)
         
-        pause_duration = start_t - end_t
-        if pause_duration > 0:
-            pauses.append({
-                "start": end_t,
-                "end": start_t,
-                "duration": pause_duration,
-                "previous_word": prev_word.get('word', ''),
-                "next_word": curr_word.get('word', '')
-            })
+        pause_duration = max(0.0, start_t - end_t)
+        pauses.append({
+            "start": end_t,
+            "end": start_t,
+            "duration": pause_duration,
+            "previous_word": prev_word.get('word', ''),
+            "next_word": curr_word.get('word', '')
+        })
             
     return pauses
 

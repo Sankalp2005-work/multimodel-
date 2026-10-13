@@ -59,7 +59,7 @@ def test_wilson_ci_basic():
 
 def test_wilson_ci_edge_cases():
     assert wilson_ci(0, 100)[0] == 0.0
-    assert wilson_ci(100, 100)[1] == 1.0
+    assert np.isclose(wilson_ci(100, 100)[1], 1.0)
 
 def test_cohens_kappa_perfect():
     assert cohens_kappa(1.0, 0.5) == 1.0

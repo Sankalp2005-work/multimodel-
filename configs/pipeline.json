@@ -1,8 +1,14 @@
 {
-    "rushed_thresh": -0.05,
-    "pause_thresh": 0.4,
-    "pitch_thresh": -1.0,
-    "clarity_thresh": -0.15,
+    "pace_slope_thresh": 1.20,
+    "pause_silence_thresh_s": 0.55,
+    "pitch_var_ratio_thresh": 0.42,
+    "centroid_ratio_thresh": 0.878,
+    "energy_drop_thresh": 4.74,
+    "min_rushed_duration_s": 4.0,
+    "min_flat_pitch_duration_s": 4.0,
+    "min_confidence": 0.25,
+    "k_sd": 1.5,
+    "calibration_method": "ideal_vs_ideal_variation",
     "weights": {
         "rushed_pace": 1.0,
         "dead_pause": 1.0,

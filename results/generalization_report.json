@@ -1,0 +1,254 @@
+{
+  "pitch_shift_stress": [
+    {
+      "shift_semitones": -4.0,
+      "results": [
+        {
+          "pair": "T1_ideal",
+          "semitones": -4.0,
+          "expected_flawed": false,
+          "detected_flaws": [
+            "rushed_pace",
+            "mumbled_clarity"
+          ]
+        },
+        {
+          "pair": "T2_ideal",
+          "semitones": -4.0,
+          "expected_flawed": false,
+          "detected_flaws": [
+            "dead_pause",
+            "dead_pause",
+            "mumbled_clarity"
+          ]
+        },
+        {
+          "pair": "T1_rushed",
+          "semitones": -4.0,
+          "expected_flawed": true,
+          "detected_flaws": [
+            "rushed_pace",
+            "mumbled_clarity"
+          ]
+        }
+      ]
+    },
+    {
+      "shift_semitones": -2.0,
+      "results": [
+        {
+          "pair": "T1_ideal",
+          "semitones": -2.0,
+          "expected_flawed": false,
+          "detected_flaws": [
+            "rushed_pace",
+            "mumbled_clarity"
+          ]
+        },
+        {
+          "pair": "T2_ideal",
+          "semitones": -2.0,
+          "expected_flawed": false,
+          "detected_flaws": [
+            "dead_pause",
+            "dead_pause",
+            "mumbled_clarity"
+          ]
+        },
+        {
+          "pair": "T1_rushed",
+          "semitones": -2.0,
+          "expected_flawed": true,
+          "detected_flaws": [
+            "rushed_pace",
+            "mumbled_clarity"
+          ]
+        }
+      ]
+    },
+    {
+      "shift_semitones": 2.0,
+      "results": [
+        {
+          "pair": "T1_ideal",
+          "semitones": 2.0,
+          "expected_flawed": false,
+          "detected_flaws": [
+            "rushed_pace"
+          ]
+        },
+        {
+          "pair": "T2_ideal",
+          "semitones": 2.0,
+          "expected_flawed": false,
+          "detected_flaws": [
+            "dead_pause",
+            "dead_pause"
+          ]
+        },
+        {
+          "pair": "T1_rushed",
+          "semitones": 2.0,
+          "expected_flawed": true,
+          "detected_flaws": [
+            "rushed_pace"
+          ]
+        }
+      ]
+    },
+    {
+      "shift_semitones": 4.0,
+      "results": [
+        {
+          "pair": "T1_ideal",
+          "semitones": 4.0,
+          "expected_flawed": false,
+          "detected_flaws": [
+            "rushed_pace"
+          ]
+        },
+        {
+          "pair": "T2_ideal",
+          "semitones": 4.0,
+          "expected_flawed": false,
+          "detected_flaws": [
+            "dead_pause",
+            "dead_pause",
+            "mumbled_clarity"
+          ]
+        },
+        {
+          "pair": "T1_rushed",
+          "semitones": 4.0,
+          "expected_flawed": true,
+          "detected_flaws": [
+            "rushed_pace",
+            "mumbled_clarity"
+          ]
+        }
+      ]
+    }
+  ],
+  "tempo_variation_stress": [
+    {
+      "tempo_rate": 0.88,
+      "results": [
+        {
+          "pair": "T1_ideal",
+          "rate": 0.88,
+          "detected_flaws": [
+            "dead_pause",
+            "rushed_pace"
+          ]
+        },
+        {
+          "pair": "T2_ideal",
+          "rate": 0.88,
+          "detected_flaws": [
+            "dead_pause",
+            "dead_pause"
+          ]
+        }
+      ]
+    },
+    {
+      "tempo_rate": 1.12,
+      "results": [
+        {
+          "pair": "T1_ideal",
+          "rate": 1.12,
+          "detected_flaws": [
+            "rushed_pace"
+          ]
+        },
+        {
+          "pair": "T2_ideal",
+          "rate": 1.12,
+          "detected_flaws": [
+            "dead_pause",
+            "dead_pause",
+            "rushed_pace",
+            "rushed_pace"
+          ]
+        }
+      ]
+    }
+  ],
+  "noise_robustness_stress": [
+    {
+      "snr_db": 25.0,
+      "results": [
+        {
+          "pair": "T1_ideal",
+          "snr_db": 25.0,
+          "detected_flaws": [
+            "rushed_pace"
+          ]
+        },
+        {
+          "pair": "T2_ideal",
+          "snr_db": 25.0,
+          "detected_flaws": [
+            "dead_pause",
+            "dead_pause"
+          ]
+        },
+        {
+          "pair": "T1_rushed",
+          "snr_db": 25.0,
+          "detected_flaws": [
+            "rushed_pace"
+          ]
+        }
+      ]
+    },
+    {
+      "snr_db": 18.0,
+      "results": [
+        {
+          "pair": "T1_ideal",
+          "snr_db": 18.0,
+          "detected_flaws": [
+            "rushed_pace"
+          ]
+        },
+        {
+          "pair": "T2_ideal",
+          "snr_db": 18.0,
+          "detected_flaws": []
+        },
+        {
+          "pair": "T1_rushed",
+          "snr_db": 18.0,
+          "detected_flaws": [
+            "rushed_pace"
+          ]
+        }
+      ]
+    }
+  ],
+  "summary": {
+    "pitch_shift_invariance": {
+      "tested_semitone_range": "[-4, +4]",
+      "total_clean_evals": 8,
+      "false_positive_rate": 1.0,
+      "flawed_detection_recall": 1.0,
+      "status": "SENSITIVE"
+    },
+    "tempo_scaling_invariance": {
+      "tested_rates": [
+        0.88,
+        1.12
+      ],
+      "clean_rushed_fpr": 0.75,
+      "status": "SENSITIVE"
+    },
+    "noise_robustness": {
+      "tested_snr_db": [
+        25.0,
+        18.0
+      ],
+      "status": "PASS"
+    }
+  }
+}

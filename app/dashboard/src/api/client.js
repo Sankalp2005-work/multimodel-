@@ -27,14 +27,31 @@ export const getResult = async (resultId) => {
   return response.data;
 };
 
-// Mock data fallback for demo mode
+// Fetch calibrated demo data from backend, with offline fallback
 export const getDemoData = async () => {
+  try {
+    const response = await client.get('/demo');
+    if (response.data) {
+      return response.data;
+    }
+  } catch (err) {
+    console.warn('Backend /demo unreachable, using fallback demo data:', err);
+  }
+
   return new Promise((resolve) => {
     setTimeout(() => {
       resolve({
-        id: "demo-result-001",
-        idealAudioUrl: '/demo/T1_ideal_1.wav',
-        participantAudioUrl: '/demo/T1_rushed.wav',
+        sample_id: "demo_take_01",
+        idealAudioUrl: 'http://localhost:8000/api/demo/audio/ideal_demo.wav',
+        participantAudioUrl: 'http://localhost:8000/api/demo/audio/participant_demo.wav',
+        scores: {
+          pace: 3,
+          pause: 1,
+          pitch: 2,
+          energy: 0,
+          clarity: 4,
+          overall: 2.0
+        },
         overall_scores: {
           pace: 3,
           pause: 1,
