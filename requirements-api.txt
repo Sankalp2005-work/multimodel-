@@ -1,0 +1,8 @@
+# Minimal deps for the deployed SpeechMirror API service (Render free tier).
+# The endpoints currently served need no torch/whisperx; full analysis deps
+# live in requirements.txt for local pipeline runs.
+numpy>=1.24,<2.0
+fastapi>=0.100
+uvicorn>=0.23
+python-multipart>=0.0.6
+pydantic>=2.0

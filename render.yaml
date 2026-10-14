@@ -1,0 +1,19 @@
+# Render blueprint — SpeechMirror API (free tier, Docker runtime)
+# Deploy via dashboard (New+ → Blueprint) or API (see deploy/render/deploy.py).
+services:
+  - type: web
+    name: speechmirror-api
+    runtime: docker
+    dockerfilePath: ./Dockerfile.render
+    dockerContext: .
+    plan: free
+    region: singapore
+    branch: hackathon-build
+    healthCheckPath: /health
+    envVars:
+      - key: PYTHONPATH
+        value: /app
+      # Comma-separated origins allowed to call the API. Updated to the
+      # Vercel deployment URL by deploy/render/deploy.py after frontend deploy.
+      - key: CORS_ORIGINS
+        value: http://localhost:3000

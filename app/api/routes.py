@@ -7,7 +7,7 @@ import subprocess
 from pathlib import Path
 from typing import Optional
 import numpy as np
-from fastapi import APIRouter, UploadFile, File, Form, HTTPException, BackgroundTasks
+from fastapi import APIRouter, UploadFile, File, Form, HTTPException, BackgroundTasks, Request
 from fastapi.responses import FileResponse, JSONResponse
 from app.api.schemas import UploadResponse, AnalyzeRequest, AnalyzePayload, DetectionResult, Alignment, Region, Evidence, Scores, Run
 
@@ -79,7 +79,7 @@ async def upload_audio(
         logger.error(f"Upload failed: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Upload failed: {str(e)}")
 
-def _perform_analysis(upload_id: str, transcript: str = "") -> DetectionResult:
+def _perform_analysis(upload_id: str, transcript: str = "", base_url: str = "") -> DetectionResult:
     session_dir = UPLOAD_DIR / upload_id
     
     if not session_dir.exists():
@@ -94,8 +94,8 @@ def _perform_analysis(upload_id: str, transcript: str = "") -> DetectionResult:
     try:
         logger.info(f"Running analysis for upload {upload_id} with transcript: {transcript[:30] if transcript else ''}...")
         
-        ideal_url = f"http://localhost:8000/api/audio/{upload_id}/ideal.wav"
-        participant_url = f"http://localhost:8000/api/audio/{upload_id}/participant.wav"
+        ideal_url = f"{base_url}api/audio/{upload_id}/ideal.wav"
+        participant_url = f"{base_url}api/audio/{upload_id}/participant.wav"
         
         time_points = [round(i * 0.15, 2) for i in range(100)]
         timelines = {
@@ -163,13 +163,13 @@ def _perform_analysis(upload_id: str, transcript: str = "") -> DetectionResult:
         raise HTTPException(status_code=500, detail=f"Analysis failed: {str(e)}")
 
 @router.post("/api/analyze/{upload_id}", response_model=DetectionResult)
-async def analyze_audio_by_id(upload_id: str, payload: Optional[AnalyzePayload] = None):
+async def analyze_audio_by_id(upload_id: str, request: Request, payload: Optional[AnalyzePayload] = None):
     transcript = payload.transcript if payload and payload.transcript else ""
-    return _perform_analysis(upload_id, transcript)
+    return _perform_analysis(upload_id, transcript, base_url=str(request.base_url))
 
 @router.post("/api/analyze", response_model=DetectionResult)
-async def analyze_audio(request: AnalyzeRequest):
-    return _perform_analysis(request.upload_id, request.transcript or "")
+async def analyze_audio(request: Request, body: AnalyzeRequest):
+    return _perform_analysis(body.upload_id, body.transcript or "", base_url=str(request.base_url))
 
 @router.get("/api/audio/{upload_id}/{filename}")
 async def get_uploaded_audio(upload_id: str, filename: str):
